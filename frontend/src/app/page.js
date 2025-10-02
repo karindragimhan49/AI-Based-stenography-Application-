@@ -1,20 +1,16 @@
-import Hero from '../components/Hero'
-import ConverterCard from '../components/ConverterCard'
-import Faq from '../components/Faq'
-import SupportedCountries from '../components/SupportedCountries'
-import Head from 'next/head'
+// src/app/page.js (New Home Page)
+import Hero from "@/components/Hero";
+import HowItWorks from "@/components/HowItWorks";
+import Reviews from "@/components/Reviews";
+// You can add more sections like Features, Pricing etc.
 
-export default function Home() {
+export default function HomePage() {
   return (
-    <> 
-      <Head>
-        <title>Exchango - Effortless Currency Conversion</title>
-      </Head>
-      
+    <div>
       <Hero />
-      <ConverterCard />
-      <SupportedCountries />
-      <Faq />
-    </>
-  )
+      <HowItWorks />
+      <Reviews />
+      {/* Add other sections here */}
+    </div>
+  );
 }

@@ -6,6 +6,7 @@ from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
 from PIL import Image
 import numpy as np
+from typing import Tuple
 
 # --- Security & Encryption ---
 from cryptography.fernet import Fernet, InvalidToken
@@ -33,7 +34,7 @@ def generate_key_from_password(password: str, salt: bytes) -> bytes:
     return key
 
 
-def encrypt_message(message: str, password: str) -> (bytes, bytes):
+def encrypt_message(message: str, password: str) -> Tuple[bytes, bytes]:
     salt = os.urandom(16)
     key = generate_key_from_password(password, salt)
     f = Fernet(key)
@@ -121,6 +122,104 @@ def reveal_data_from_image(image_file, password):
    
     decrypted_message = decrypt_message(bytes(encrypted_message), password, bytes(salt))
     return decrypted_message
+
+# --- Audio Steganography Core Functions ---
+
+def hide_data_in_audio(audio_file, message, password):
+    # 1. Encrypt the message using the provided password
+    encrypted_message, salt = encrypt_message(message, password)
+    payload = salt + DELIMITER.encode('utf-8') + encrypted_message + DELIMITER.encode('utf-8')
+    binary_payload = ''.join(format(byte, '08b') for byte in payload)
+
+    # 2. Open the WAV file and read its data
+    song = wave.open(audio_file, mode='rb')
+    nframes = song.getnframes()
+    frames = song.readframes(nframes)
+    frame_list = list(frames)
+    
+    # Check if the audio file has enough capacity to hide the message
+    if len(binary_payload) > len(frame_list):
+        raise ValueError("Message is too long for the selected audio file.")
+
+    # 3. Embed the payload into the least significant bits of the audio frames
+    data_index = 0
+    for i in range(len(binary_payload)):
+        frame_list[i] = (frame_list[i] & 254) | int(binary_payload[data_index])
+        data_index += 1
+    
+    new_frames = bytes(frame_list)
+    
+    # 4. Create a new audio file with the embedded message
+    new_song = wave.open('encoded_audio.wav', 'wb')
+    new_song.setparams(song.getparams())
+    new_song.writeframes(new_frames)
+    song.close()
+    new_song.close()
+
+def reveal_data_from_audio(audio_file, password):
+    song = wave.open(audio_file, mode='rb')
+    frames = bytearray(list(song.readframes(song.getnframes())))
+    
+    # 1. Extract the binary data from the least significant bits
+    binary_data = ''
+    for byte in frames:
+        binary_data += str(byte & 1)
+        
+    all_bytes = bytearray()
+    for i in range(0, len(binary_data), 8):
+        byte = binary_data[i:i+8]
+        if len(byte) == 8:
+            all_bytes.append(int(byte, 2))
+    
+    # 2. Split the payload using the defined delimiter
+    delimiter_bytes = DELIMITER.encode('utf-8')
+    parts = all_bytes.split(delimiter_bytes)
+    
+    if len(parts) < 3:
+        raise ValueError("No hidden message found or data is corrupted.")
+    
+    salt = parts[0]
+    encrypted_message = parts[1]
+    
+    # 3. Decrypt the extracted message
+    decrypted_message = decrypt_message(bytes(encrypted_message), password, bytes(salt))
+    return decrypted_message
+
+# --- New API Endpoints for Audio ---
+
+@app.route('/api/encode-audio', methods=['POST'])
+def encode_audio_api():
+    if 'audio' not in request.files or 'message' not in request.form or 'password' not in request.form:
+        return jsonify({'error': 'Missing required fields (audio, message, password)'}), 400
+    
+    audio_file = request.files['audio']
+    message = request.form['message']
+    password = request.form['password']
+
+    try:
+        hide_data_in_audio(audio_file, message, password)
+        return send_file('encoded_audio.wav', mimetype='audio/wav', as_attachment=True, download_name='encoded_audio.wav')
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
+    except Exception as e:
+        return jsonify({'error': f"An unexpected error occurred: {str(e)}"}), 500
+
+@app.route('/api/decode-audio', methods=['POST'])
+def decode_audio_api():
+        if 'audio' not in request.files or 'password' not in request.form:
+            return jsonify({'error': 'Missing required fields (audio, password)'}), 400
+            
+        audio_file = request.files['audio']
+        password = request.form['password']
+
+        try:
+            message = reveal_data_from_audio(audio_file, password)
+            return jsonify({'message': message})
+        except ValueError as e:
+            return jsonify({'error': str(e)}), 401
+        except Exception as e:
+            return jsonify({'error': f"An unexpected error occurred: {str(e)}"}), 500
+
 
 # --- API Endpoints ---
 

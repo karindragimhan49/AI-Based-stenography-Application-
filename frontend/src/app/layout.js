@@ -1,44 +1,24 @@
-import { Inter } from 'next/font/google'
+// src/app/layout.js
+
 import './globals.css'
-import Navbar from '../components/Navbar'
-import Footer from '../components/Footer'
-import { AuthProvider } from '../context/AuthContext'
+import { Inter } from 'next/font/google'
+import Navbar from '@/components/Navbar' // Import Navbar
+import Footer from '@/components/Footer' // Import Footer
+
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata = {
-  title: 'Exchango',
-  description: 'Effortless Currency Conversion and Transfer Management',
+  title: 'StegaCrypt - Secure Steganography',
+  description: 'Hide your secret messages within images securely.',
 }
 
 export default function RootLayout({ children }) {
-  const bodyStyle = {
-    backgroundImage: "url('/background-image.jpg')",
-    backgroundSize: 'cover',
-    backgroundPosition: 'center',
-    backgroundRepeat: 'no-repeat',
-    backgroundAttachment: 'fixed',
-  };
-
   return (
-    
-    <html lang="en" className="scroll-smooth">  
-      <body className={`${inter.className} text-slate-800`} style={bodyStyle}>
-        <AuthProvider>
-          <div className="absolute inset-0 bg-white/ backdrop-blur-sm"></div>
-
-    
-        <div className="relative z-10 flex flex-col min-h-screen">
-          <Navbar />
-          <main className="flex-grow">
-            {children}
-          </main>
-         
-          <Footer />
-        </div>
-      </AuthProvider>
-        
-        
-
+    <html lang="en" className="!scroll-smooth"> {/* Smooth scroll for nav links */}
+      <body className={`${inter.className} bg-gray-900 text-gray-200`}>
+        <Navbar />
+        <main>{children}</main> {/* Main content goes here */}
+        <Footer />
       </body>
     </html>
   )
