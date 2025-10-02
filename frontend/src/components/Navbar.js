@@ -1,28 +1,144 @@
 // src/components/Navbar.js
+'use client';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { usePathname, useRouter } from 'next/navigation';
+import { motion, AnimatePresence } from 'framer-motion';
+import { FiMenu, FiX } from 'react-icons/fi';
 
 export default function Navbar() {
+  const [isOpen, setIsOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  const pathname = usePathname();
+  const router = useRouter();
+
+  // Handle scroll effect
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 20);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Enhanced scroll handling
+  const scrollToSection = (sectionId) => {
+    // First check if we're on the home page
+    if (pathname !== '/') {
+      router.push(`/${sectionId}`);
+      return;
+    }
+
+    // Find the section element
+    const element = document.getElementById(sectionId);
+    if (element) {
+      // Add offset for the navbar height
+      const offset = 80; // Adjust this value based on your navbar height
+      const elementPosition = element.getBoundingClientRect().top;
+      const offsetPosition = elementPosition + window.pageYOffset - offset;
+
+      window.scrollTo({
+        top: offsetPosition,
+        behavior: 'smooth'
+      });
+    }
+    setIsOpen(false); // Close mobile menu after clicking
+  };
+
+  const navLinks = [
+    { href: 'how-it-works', label: 'How It Works' },
+    { href: 'features', label: 'Features' },
+    { href: 'reviews', label: 'Reviews' }
+  ];
+
   return (
-    <nav className="sticky top-0 z-50 bg-gray-900/50 backdrop-blur-lg border-b border-gray-800">
+    <nav className={`fixed top-0 w-full z-50 transition-all duration-300 ${
+      scrolled ? 'bg-gray-900/80 backdrop-blur-lg shadow-xl' : 'bg-transparent'
+    }`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          <div className="flex items-center">
+          {/* Logo */}
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="flex items-center"
+          >
             <Link href="/" className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-indigo-600">
               StegaCrypt
             </Link>
+          </motion.div>
+
+          {/* Desktop Navigation */}
+          <div className="hidden md:flex items-center space-x-8">
+            {navLinks.map((link) => (
+              <button
+                key={link.href}
+                onClick={() => scrollToSection(link.href)}
+                className={`text-sm font-medium transition-all hover:text-purple-400 cursor-pointer ${
+                  pathname === `/#${link.href}` ? 'text-purple-400' : 'text-gray-300'
+                }`}
+              >
+                {link.label}
+              </button>
+            ))}
+            <motion.div
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <Link
+                href="/app"
+                className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-4 py-2 rounded-lg font-medium hover:shadow-lg hover:shadow-purple-500/20 transition-all"
+              >
+                Launch App
+              </Link>
+            </motion.div>
           </div>
-          <div className="hidden md:flex items-center space-x-6 text-gray-300">
-            <Link href="/#how-it-works" className="hover:text-purple-400 transition">How It Works</Link>
-            <Link href="/#features" className="hover:text-purple-400 transition">Features</Link>
-            <Link href="/#reviews" className="hover:text-purple-400 transition">Reviews</Link>
-          </div>
-          <div>
-            <Link href="/app" className="bg-purple-600 text-white px-4 py-2 rounded-md font-semibold hover:bg-purple-700 transition">
-              Launch App
-            </Link>
+
+          {/* Mobile Menu Button */}
+          <div className="md:hidden">
+            <button
+              onClick={() => setIsOpen(!isOpen)}
+              className="text-gray-300 hover:text-purple-400 transition-colors"
+            >
+              {isOpen ? <FiX size={24} /> : <FiMenu size={24} />}
+            </button>
           </div>
         </div>
       </div>
+
+      {/* Mobile Menu */}
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="md:hidden bg-gray-900/95 backdrop-blur-lg"
+          >
+            <div className="px-4 pt-2 pb-4 space-y-3">
+              {navLinks.map((link) => (
+                <button
+                  key={link.href}
+                  onClick={() => scrollToSection(link.href)}
+                  className={`block w-full text-left px-3 py-2 rounded-lg text-base font-medium transition-all hover:bg-purple-500/10 ${
+                    pathname === `/#${link.href}` ? 'text-purple-400 bg-purple-500/10' : 'text-gray-300'
+                  }`}
+                >
+                  {link.label}
+                </button>
+              ))}
+              <Link
+                href="/app"
+                onClick={() => setIsOpen(false)}
+                className="block w-full text-center bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-4 py-2 rounded-lg font-medium hover:shadow-lg hover:shadow-purple-500/20 transition-all"
+              >
+                Launch App
+              </Link>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </nav>
   );
 }

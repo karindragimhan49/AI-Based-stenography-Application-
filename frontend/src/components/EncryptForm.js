@@ -1,6 +1,7 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
+import { FiAlertTriangle } from 'react-icons/fi';
 import PasswordStrengthMeter from './PasswordStrengthMeter';
 
 export default function EncryptForm({ activeTab }) {
@@ -11,6 +12,8 @@ export default function EncryptForm({ activeTab }) {
   const [error, setError] = useState('');
   const [previewUrl, setPreviewUrl] = useState(null);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [analysisResult, setAnalysisResult] = useState([]);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
 
   const handleFileChange = (e) => {
     const selectedFile = e.target.files[0];
@@ -103,6 +106,51 @@ export default function EncryptForm({ activeTab }) {
     return strength;
   };
 
+  // Improved analysis function with better error handling
+  const analyzeText = useCallback(async (text) => {
+    if (!text || text.length < 3) {
+      setAnalysisResult([]);
+      return;
+    }
+
+    setIsAnalyzing(true);
+    try {
+      const response = await axios.post('http://localhost:5000/api/analyze-text', {
+        text: text
+      }, {
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+
+      console.log('Analysis response:', response.data); // Debug log
+      
+      if (Array.isArray(response.data) && response.data.length > 0) {
+        setAnalysisResult(response.data);
+      } else {
+        setAnalysisResult([]);
+      }
+    } catch (err) {
+      console.error('Analysis error:', err);
+      setAnalysisResult([]);
+    } finally {
+      setIsAnalyzing(false);
+    }
+  }, []);
+
+  // Debounced effect with immediate check for existing text
+  useEffect(() => {
+    console.log('Message changed:', message); // Debug log
+    
+    const timer = setTimeout(() => {
+      if (message) {
+        analyzeText(message);
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [message, analyzeText]);
+
   return (
     <div className="bg-gray-800 p-8 rounded-lg shadow-lg w-full max-w-lg">
       <h2 className="text-2xl font-bold mb-6 text-teal-400">Encrypt a Message</h2>
@@ -156,15 +204,46 @@ export default function EncryptForm({ activeTab }) {
           </label>
         </div>
 
-        <textarea
-          className="w-full p-3 bg-gray-700 rounded-md border border-gray-600 focus:ring-2 focus:ring-teal-500 focus:outline-none transition"
-          placeholder="Enter your secret message"
-          rows="4"
-          value={message}
-          onChange={(e) => setMessage(e.target.value)}
-          disabled={isLoading}
-        />
-        
+        <div className="space-y-2">
+          <textarea
+            className="w-full p-3 bg-gray-700 rounded-md border border-gray-600 focus:ring-2 focus:ring-teal-500 focus:outline-none transition"
+            placeholder="Enter your secret message"
+            rows="4"
+            value={message}
+            onChange={(e) => {
+              setMessage(e.target.value);
+              console.log('Text changed:', e.target.value); // Debug log
+            }}
+            disabled={isLoading}
+          />
+          
+          {/* Sensitive Data Warning - More visible styling */}
+          {analysisResult.length > 0 && (
+            <div className="animate-fade-in rounded-md bg-yellow-500/20 border-l-4 border-yellow-500 p-4 my-4">
+              <div className="flex items-center mb-2">
+                <FiAlertTriangle className="text-yellow-500 mr-2" size={20} />
+                <span className="text-yellow-500 font-semibold">
+                  Sensitive Data Detected!
+                </span>
+              </div>
+              <div className="space-y-2">
+                {analysisResult.map((item, index) => (
+                  <div 
+                    key={index}
+                    className="text-sm text-yellow-400 bg-yellow-500/10 p-2 rounded flex items-center"
+                  >
+                    <span className="font-medium mr-2">{item.type}:</span>
+                    <span className="font-mono">{item.value}</span>
+                  </div>
+                ))}
+                <p className="text-sm text-yellow-400/80 mt-2">
+                  ⚠️ Consider removing sensitive information before encrypting
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+
         <div className="space-y-2">
           <div className="relative">
             <input

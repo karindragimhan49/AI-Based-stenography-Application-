@@ -1,16 +1,17 @@
-// src/app/page.js (New Home Page)
+'use client';
+import { useEffect } from 'react';
 import Hero from "@/components/Hero";
 import HowItWorks from "@/components/HowItWorks";
+import Features from "@/components/Features";
 import Reviews from "@/components/Reviews";
-// You can add more sections like Features, Pricing etc.
 
 export default function HomePage() {
   return (
-    <div>
+    <main className="min-h-screen bg-gray-900">
       <Hero />
       <HowItWorks />
+      <Features />
       <Reviews />
-      {/* Add other sections here */}
-    </div>
+    </main>
   );
 }
