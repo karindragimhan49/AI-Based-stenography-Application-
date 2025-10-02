@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import axios from 'axios';
+import DecryptionAnimation from './DecryptionAnimation';
 
 export default function DecryptForm({ activeTab }) {
   const [password, setPassword] = useState('');
@@ -66,6 +67,8 @@ export default function DecryptForm({ activeTab }) {
       </h2>
       
       {error && <p className="bg-red-500/20 text-red-400 p-3 rounded-md mb-4">{error}</p>}
+      
+      {isLoading && <DecryptionAnimation />}
       
       {decodedMessage && (
         <div className="bg-green-500/20 text-green-300 p-4 rounded-md mb-4">
