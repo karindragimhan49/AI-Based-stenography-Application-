@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import axios from 'axios';
 import { FiAlertTriangle } from 'react-icons/fi';
 import PasswordStrengthMeter from './PasswordStrengthMeter';
@@ -14,6 +14,7 @@ export default function EncryptForm({ activeTab }) {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [analysisResult, setAnalysisResult] = useState([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const fileInputRef = useRef(null);
 
   const handleFileChange = (e) => {
     const selectedFile = e.target.files[0];
@@ -54,7 +55,7 @@ export default function EncryptForm({ activeTab }) {
         },
       });
 
-      // Create download link for encrypted file
+      // Create and trigger download
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
@@ -64,11 +65,19 @@ export default function EncryptForm({ activeTab }) {
       link.remove();
       window.URL.revokeObjectURL(url);
 
-      // Reset form
+      // Reset form and clear preview
       setMessage('');
       setPassword('');
       setFile(null);
-      setPreviewUrl(null);
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+        setPreviewUrl(null);
+      }
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+
     } catch (err) {
       setError('An error occurred during encryption.');
     } finally {
@@ -162,6 +171,7 @@ export default function EncryptForm({ activeTab }) {
         <div className="relative">
           <label className="flex flex-col items-center justify-center w-full h-64 border-2 border-dashed border-gray-600 rounded-lg cursor-pointer bg-gray-700 hover:bg-gray-600 transition-all duration-300">
             <input
+              ref={fileInputRef}
               type="file"
               className="hidden"
               onChange={handleFileChange}
