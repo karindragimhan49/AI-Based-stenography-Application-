@@ -51,7 +51,7 @@ export default function HowItWorks() {
   ];
 
   return (
-    <section className="py-24 relative overflow-hidden">
+    <section id="how-it-works" className="py-24 relative overflow-hidden">
       <motion.div
         initial={{ opacity: 0 }}
         whileInView={{ opacity: 1 }}

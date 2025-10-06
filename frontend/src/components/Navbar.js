@@ -22,28 +22,38 @@ export default function Navbar() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Enhanced scroll handling
+  // Enhanced scroll handling with error checking
   const scrollToSection = (sectionId) => {
-    // First check if we're on the home page
+    // If not on home page, navigate to home first
     if (pathname !== '/') {
-      router.push(`/${sectionId}`);
-      return;
+      router.push('/');
+      // Wait for navigation to complete
+      setTimeout(() => {
+        const element = document.getElementById(sectionId);
+        if (element) {
+          const offset = 80;
+          const elementPosition = element.getBoundingClientRect().top;
+          const offsetPosition = elementPosition + window.pageYOffset - offset;
+          window.scrollTo({
+            top: offsetPosition,
+            behavior: 'smooth'
+          });
+        }
+      }, 100);
+    } else {
+      // Already on home page
+      const element = document.getElementById(sectionId);
+      if (element) {
+        const offset = 80;
+        const elementPosition = element.getBoundingClientRect().top;
+        const offsetPosition = elementPosition + window.pageYOffset - offset;
+        window.scrollTo({
+          top: offsetPosition,
+          behavior: 'smooth'
+        });
+      }
     }
-
-    // Find the section element
-    const element = document.getElementById(sectionId);
-    if (element) {
-      // Add offset for the navbar height
-      const offset = 80; // Adjust this value based on your navbar height
-      const elementPosition = element.getBoundingClientRect().top;
-      const offsetPosition = elementPosition + window.pageYOffset - offset;
-
-      window.scrollTo({
-        top: offsetPosition,
-        behavior: 'smooth'
-      });
-    }
-    setIsOpen(false); // Close mobile menu after clicking
+    setIsOpen(false);
   };
 
   const navLinks = [
@@ -51,6 +61,16 @@ export default function Navbar() {
     { href: 'features', label: 'Features' },
     { href: 'reviews', label: 'Reviews' }
   ];
+
+  // Handle navigation with path checking
+  const handleNavigation = (link) => {
+    if (pathname !== '/') {
+      router.push(`/#${link}`);
+    } else {
+      scrollToSection(link);
+    }
+    setIsOpen(false);
+  };
 
   return (
     <nav className={`fixed top-0 w-full z-50 transition-all duration-300 ${
@@ -74,7 +94,7 @@ export default function Navbar() {
             {navLinks.map((link) => (
               <button
                 key={link.href}
-                onClick={() => scrollToSection(link.href)}
+                onClick={() => handleNavigation(link.href)}
                 className={`text-sm font-medium transition-all hover:text-purple-400 cursor-pointer ${
                   pathname === `/#${link.href}` ? 'text-purple-400' : 'text-gray-300'
                 }`}
@@ -120,7 +140,7 @@ export default function Navbar() {
               {navLinks.map((link) => (
                 <button
                   key={link.href}
-                  onClick={() => scrollToSection(link.href)}
+                  onClick={() => handleNavigation(link.href)}
                   className={`block w-full text-left px-3 py-2 rounded-lg text-base font-medium transition-all hover:bg-purple-500/10 ${
                     pathname === `/#${link.href}` ? 'text-purple-400 bg-purple-500/10' : 'text-gray-300'
                   }`}
